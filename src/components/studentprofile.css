@@ -1,169 +1,18 @@
-/* StudentSearch.css */
-
-/* Main container */
-.student-search-container {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #333;
+/* studentprofile.css */
+.list-disc li pre {
+  max-height: 400px;
+  overflow-y: auto;
 }
 
-/* Header */
-.student-search-header {
-  color: #2c3e50;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #eee;
+.text-sm {
+  font-size: 0.875rem;
 }
 
-/* Search bar */
-.search-bar {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.search-input {
-  flex-grow: 1;
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  transition: border-color 0.3s;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-}
-
-.search-button {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 0.5rem 1.5rem;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s;
-}
-
-.search-button:hover {
-  background-color: #2980b9;
-}
-
-/* Debug info */
-.debug-info {
-  background-color: #f8f9fa;
-  padding: 0.75rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  color: #6c757d;
-  margin-bottom: 1rem;
-  border-left: 3px solid #6c757d;
-}
-
-/* Data type buttons */
-.data-type-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.data-type-button {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s;
-}
-
-.data-type-button:hover {
-  transform: translateY(-1px);
-}
-
-/* Legend */
-.legend {
+.text-xs {
   font-size: 0.75rem;
-  color: #6c757d;
-  margin-top: 0.5rem;
 }
 
-/* Data display */
-.data-display-container {
-  margin-top: 1.5rem;
-}
-
-.data-display-header {
-  color: #2c3e50;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-/* Loading states */
-.loading-text {
-  color: #3498db;
-}
-
-/* Error states */
-.error-text {
-  color: #e74c3c;
-}
-
-/* Empty states */
-.empty-text {
-  color: #f39c12;
-}
-
-/* Success states */
-.success-text {
-  color: #2ecc71;
-}
-
-/* Data content */
-.data-content {
-  background-color: #f8f9fa;
-  padding: 1rem;
-  border-radius: 4px;
-  margin-top: 1rem;
-  overflow-x: auto;
-}
-
-.data-pre {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 0.85rem;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-/* List items */
-.data-list {
-  list-style-type: disc;
-  padding-left: 1.5rem;
-}
-
-.data-list-item {
-  margin-bottom: 0.5rem;
-}
-
-/* Status indicators */
-.status-indicator {
-  margin-left: 0.25rem;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .search-bar {
-    flex-direction: column;
-  }
-  
-  .search-button {
-    width: 100%;
-  }
-  
-  .data-type-buttons {
-    justify-content: center;
-  }
+/* Ensure the container doesn't overflow on small screens */
+.max-w-7xl {
+  max-width: 80rem;
 }

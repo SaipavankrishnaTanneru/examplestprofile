@@ -7,26 +7,30 @@ const BASE_URL = 'http://localhost:8080/api/payments';
 // Helper function to fetch data from an endpoint
 const fetchFromEndpoint = async (endpoint, studentId) => {
   try {
-    // Construct URL: empty endpoint for allDetails, others append their path
-    const url = endpoint ? `${BASE_URL}/students/${studentId}/${endpoint}` : `${BASE_URL}/students/${studentId}`;
+    // Construct URL: special case for allDetails, others append their path
+    const url = endpoint === 'details' 
+      ? `${BASE_URL}/${studentId}/details`
+      : `${BASE_URL}/${studentId}/${endpoint}`;
     console.log(`Fetching from: ${url}`); // Debug log
     const response = await axios.get(url);
-    console.log(`Response for ${endpoint || 'allDetails'}:`, response.data); // Debug log
+    console.log(`Response for ${endpoint}:`, response.data); // Debug log
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error(`Error fetching ${endpoint || 'allDetails'} for student ${studentId}:`, error.response?.status, error.message);
-      // Don't return null for 404, let the component handle it
+      console.error(`Error fetching ${endpoint} for student ${studentId}:`, error.response?.status, error.message);
+      if (error.response?.status === 404) {
+        return null; // Return null for 404 to distinguish from other errors
+      }
     }
-    throw error; // Always throw the error to let React Query handle it
+    throw error; // Throw other errors for React Query to handle
   }
 };
 
 // Custom hook to fetch student data
 const useStudentData = (studentId) => {
   const endpoints = [
-    { key: 'allDetails', endpoint: '', queryKey: ['studentAllDetails', studentId] },
-    { key: 'basic', endpoint: 'basic', queryKey: ['studentBasic', studentId] },
+    { key: 'allDetails', endpoint: 'details', queryKey: ['studentAllDetails', studentId] },
+    { key: 'basic', endpoint: '', queryKey: ['studentBasic', studentId] },
     { key: 'payment', endpoint: 'payment', queryKey: ['studentPayment', studentId] },
     { key: 'feeDetails', endpoint: 'fee-details', queryKey: ['studentFeeDetails', studentId] },
     { key: 'cards', endpoint: 'cards', queryKey: ['studentCards', studentId] },
@@ -37,6 +41,12 @@ const useStudentData = (studentId) => {
     { key: 'transport', endpoint: 'transport', queryKey: ['studentTransport', studentId] },
     { key: 'books', endpoint: 'books', queryKey: ['studentBooks', studentId] },
     { key: 'cancellations', endpoint: 'cancellations', queryKey: ['studentCancellations', studentId] },
+    { key: 'additionalDetails', endpoint: 'additional-details', queryKey: ['studentAdditionalDetails', studentId] },
+    { key: 'campusDetails', endpoint: 'campus-details', queryKey: ['studentCampusDetails', studentId] },
+    { key: 'otherFeeHeads', endpoint: 'other-fee-heads', queryKey: ['studentOtherFeeHeads', studentId] },
+    { key: 'pmIssues', endpoint: 'pm-issues', queryKey: ['studentPmIssues', studentId] },
+    { key: 'selectClasses', endpoint: 'select-classes', queryKey: ['studentSelectClasses', studentId] },
+    { key: 'uniformPrints', endpoint: 'uniform-prints', queryKey: ['studentUniformPrints', studentId] },
   ];
 
   const queries = useQueries({
@@ -48,41 +58,39 @@ const useStudentData = (studentId) => {
         if (axios.isAxiosError(error) && error.response?.status === 404) return false; // Don't retry on 404
         return failureCount < 3; // Retry up to 3 times for other errors
       },
-      // Add staleTime to prevent unnecessary refetches
       staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes garbage collection time
+      // Handle null responses (e.g., 404) explicitly
+      select: (data) => data ?? null,
     })),
   });
 
-  // Build studentData object with simplified success/error logic
+  // Build studentData object
   const studentData = endpoints.reduce((acc, { key }, index) => {
     const query = queries[index];
     
-    // Simplified logic: if query succeeded and has data, it's successful
     const hasData = query.data !== undefined && query.data !== null;
     const isEmpty = Array.isArray(query.data) && query.data.length === 0;
-    
+
     acc[key] = {
       data: query.data,
       isLoading: query.isLoading,
       error: query.error,
-      // Success if query succeeded and has non-null data (empty arrays are still considered successful)
       isSuccess: query.isSuccess && hasData,
-      // Error if query failed OR returned null/undefined (but not empty arrays)
-      isError: query.isError || (!query.isLoading && !hasData),
-      isEmpty: isEmpty, // Add this to distinguish between error and empty data
+      isError: query.isError || (!query.isLoading && !hasData && query.data !== null),
+      isEmpty: isEmpty,
+      // Add status for easier debugging
+      status: query.status,
     };
     return acc;
   }, {});
 
-  // Overall loading state
+  // Overall states
   const isLoading = queries.some((query) => query.isLoading);
-  
-  // Overall error state (at least one query failed)
   const isError = queries.some((query) => query.isError);
-  
-  // Overall success state (all enabled queries succeeded)
-  const isSuccess = queries.every((query) => query.isSuccess || query.isLoading);
+  const isSuccess = queries.every((query) => query.isSuccess || !query.isEnabled);
 
+  // Debug logging
   console.log('Student Data Debug:', {
     studentId,
     isLoading,
@@ -93,12 +101,13 @@ const useStudentData = (studentId) => {
       isLoading: q.isLoading,
       isSuccess: q.isSuccess,
       isError: q.isError,
+      status: q.status,
       hasData: q.data !== undefined && q.data !== null,
       dataType: Array.isArray(q.data) ? 'array' : typeof q.data,
-      dataLength: Array.isArray(q.data) ? q.data.length : 'N/A'
-    }))
+      dataLength: Array.isArray(q.data) ? q.data.length : 'N/A',
+    })),
   });
-  
+
   return { studentData, isLoading, isError, isSuccess };
 };
 

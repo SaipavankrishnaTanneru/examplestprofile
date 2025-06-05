@@ -1,201 +1,202 @@
 import React, { useState } from 'react';
-import { useStudentDetails } from '../hooks/useStudentDetails';
+import useStudentData from '../hooks/useStudentDetails';
 import './studentprofile.css';
 
-const StudentProfile = () => {
-  const [inputId, setInputId] = useState('23');
-  const [studentId, setStudentId] = useState(23);
-  
-  const { data: student, isLoading, isError, error } = useStudentDetails(studentId);
+const StudentSearch = () => {
+  const [studentId, setStudentId] = useState(null);
+  const [inputValue, setInputValue] = useState('');
+  const [selectedDataType, setSelectedDataType] = useState(null);
+  const { studentData, isLoading, isError } = useStudentData(studentId);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (inputId && !isNaN(inputId)) {
-      setStudentId(parseInt(inputId));
+  const handleSearch = () => {
+    const id = parseInt(inputValue, 10);
+    if (!isNaN(id)) {
+      setStudentId(id);
+      setSelectedDataType(null); // Reset selected data type on new search
+    } else {
+      alert('Please enter a valid student ID');
     }
   };
 
-  if (isLoading) return <div className="loading">Loading student details...</div>;
-  if (isError) return <div className="error">Error: {error.message}</div>;
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  const dataTypes = [
+    { key: 'allDetails', label: 'All Details' },
+    { key: 'basic', label: 'Basic Details' },
+    { key: 'payment', label: 'Payment' },
+    { key: 'feeDetails', label: 'Fee Details' },
+    { key: 'cards', label: 'Cards' },
+    { key: 'feeInstallments', label: 'Fee Installments' },
+    { key: 'paymentHistory', label: 'Payment History' },
+    { key: 'concessions', label: 'Concessions' },
+    { key: 'pocketMoney', label: 'Pocket Money' },
+    { key: 'transport', label: 'Transport' },
+    { key: 'books', label: 'Books' },
+    { key: 'cancellations', label: 'Cancellations' },
+  ];
+
+  // Helper to render data in a user-friendly format
+  const renderData = (dataType, data) => {
+    if (!data) return <div className="text-red-500">No data available</div>;
+
+    // Handle arrays (e.g., feeInstallments, paymentHistory)
+    if (Array.isArray(data)) {
+      if (data.length === 0) return <div className="text-yellow-500">No records found (empty array)</div>;
+      return (
+        <div>
+          <div className="text-sm text-gray-600 mb-2">Found {data.length} record(s)</div>
+          <ul className="list-disc pl-5">
+            {data.map((item, index) => (
+              <li key={index} className="mb-2">
+                <pre className="bg-gray-100 p-2 rounded text-sm overflow-x-auto">{JSON.stringify(item, null, 2)}</pre>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    // Handle single objects (e.g., basic, payment)
+    return (
+      <div className="bg-gray-100 p-4 rounded">
+        <pre className="text-sm overflow-x-auto">{JSON.stringify(data, null, 2)}</pre>
+      </div>
+    );
+  };
+
+  // Get the status for a specific data type
+  const getDataTypeStatus = (dataType) => {
+    if (!studentData || !studentData[dataType]) return 'unknown';
+    
+    const typeData = studentData[dataType];
+    if (typeData.isLoading) return 'loading';
+    if (typeData.isError) return 'error';
+    if (typeData.isEmpty) return 'empty';
+    if (typeData.isSuccess) return 'success';
+    return 'unknown';
+  };
+
+  // Get button color based on data availability
+  const getButtonColor = (dataType) => {
+    const status = getDataTypeStatus(dataType);
+    const isSelected = selectedDataType === dataType;
+    
+    if (isSelected) return 'bg-blue-500 text-white';
+    
+    switch (status) {
+      case 'loading': return 'bg-yellow-200 text-gray-800';
+      case 'error': return 'bg-red-200 text-gray-800';
+      case 'empty': return 'bg-orange-200 text-gray-800';
+      case 'success': return 'bg-green-200 text-gray-800 hover:bg-green-300';
+      default: return 'bg-gray-200 text-gray-800 hover:bg-gray-300';
+    }
+  };
 
   return (
-    <div className="student-profile-container">
-      <div className="id-search-container">
-        <form onSubmit={handleSubmit} className="id-search-form">
-          <div className="search-input-group">
-            <label htmlFor="studentId">Enter Student ID:</label>
-            <input
-              type="number"
-              id="studentId"
-              value={inputId}
-              onChange={(e) => setInputId(e.target.value)}
-              placeholder="Student ID"
-              min="1"
-            />
-          </div>
-          <button type="submit" className="search-button">
-            <i className="fas fa-search"></i> Load Profile
-          </button>
-        </form>
+    <div className="p-4 max-w-6xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Student Data Search</h1>
+
+      {/* Search Bar */}
+      <div className="mb-4 flex gap-2">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Enter Student ID"
+          className="border p-2 rounded w-full"
+        />
+        <button
+          onClick={handleSearch}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Search
+        </button>
       </div>
 
-      {student && (
-        <>
-          <div className="profile-header">
-            <h1>{student.studentName}'s Profile</h1>
-            <div className={`status-badge ${student.addmissionStatus.toLowerCase()}`}>
-              {student.addmissionStatus}
-            </div>
-          </div>
+      {/* Debug Info */}
+      {studentId && (
+        <div className="mb-4 p-3 bg-gray-50 rounded text-sm">
+          <strong>Debug Info:</strong> Student ID: {studentId} | 
+          Overall Loading: {isLoading ? 'Yes' : 'No'} | 
+          Overall Error: {isError ? 'Yes' : 'No'}
+        </div>
+      )}
 
-          <div className="profile-grid">
-            {/* Basic Information Section */}
-            <div className="profile-section basic-info">
-              <h2>Basic Information</h2>
-              <div className="info-grid">
-                {[
-                  { label: 'Student ID', value: student.studentId },
-                  { label: 'Gender', value: student.gender },
-                  { label: 'Date of Birth', value: new Date(student.dateOfBirth).toLocaleDateString() },
-                  { label: 'Group', value: student.groupName },
-                  { label: 'Course Track', value: student.courseTrack },
-                  { label: 'Section', value: student.section },
-                  { label: 'Admission Type', value: student.addmissionType },
-                  { label: 'Student Type', value: student.studentType },
-                  { label: 'Aadhar Number', value: student.aadharNumber }
-                ].map((item, index) => (
-                  <div key={index}>
-                    <label>{item.label}</label>
-                    <p>{item.value}</p>
+      {/* Buttons for Data Types */}
+      {studentId && (
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-2">
+            {dataTypes.map(({ key, label }) => {
+              const status = getDataTypeStatus(key);
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelectedDataType(key)}
+                  className={`px-3 py-2 rounded text-sm ${getButtonColor(key)}`}
+                  title={`Status: ${status}`}
+                >
+                  {label}
+                  {status === 'loading' && ' ⏳'}
+                  {status === 'error' && ' ❌'}
+                  {status === 'empty' && ' ⚪'}
+                  {status === 'success' && ' ✅'}
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-xs text-gray-500 mt-2">
+            Legend: ⏳ Loading | ❌ Error | ⚪ Empty | ✅ Has Data
+          </div>
+        </div>
+      )}
+
+      {/* Data Display */}
+      {isLoading && <div className="text-blue-500">Loading student data...</div>}
+      
+      {studentId && selectedDataType && (
+        <div className="mt-4">
+          <h2 className="text-xl font-semibold mb-2">
+            {dataTypes.find((dt) => dt.key === selectedDataType)?.label}
+          </h2>
+          
+          {studentData && studentData[selectedDataType] ? (
+            <div>
+              {studentData[selectedDataType].isLoading ? (
+                <div className="text-blue-500">Loading {selectedDataType}...</div>
+              ) : studentData[selectedDataType].isSuccess ? (
+                renderData(selectedDataType, studentData[selectedDataType].data)
+              ) : (
+                <div className="text-red-500">
+                  <div>No data available for {dataTypes.find((dt) => dt.key === selectedDataType)?.label}</div>
+                  {studentData[selectedDataType].error && (
+                    <div className="text-sm mt-1">
+                      Error: {studentData[selectedDataType].error.message || 'Unknown error'}
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500 mt-2">
+                    Debug: isError={String(studentData[selectedDataType].isError)}, 
+                    isEmpty={String(studentData[selectedDataType].isEmpty)}, 
+                    hasData={String(studentData[selectedDataType].data !== null && studentData[selectedDataType].data !== undefined)}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
-
-            {/* Family Information */}
-            <div className="profile-section family-info">
-              <h2>Family Information</h2>
-              <div className="info-grid">
-                <div>
-                  <label>Father's Name</label>
-                  <p>{student.fatherName}</p>
-                </div>
-                <div>
-                  <label>Mother's Name</label>
-                  <p>{student.motherName}</p>
-                </div>
-                <div className="full-width">
-                  <label>Address</label>
-                  <p>{student.address}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Academic Performance */}
-            {student.cards && (
-              <div className="profile-section academic-cards">
-                <h2>Academic Performance</h2>
-                <div className="cards-grid">
-                  {[
-                    { label: 'IPE Marks', value: student.cards.ipeMarks },
-                    { label: 'Recent Marks', value: student.cards.recentMarks },
-                    { label: 'EMCET Mock Test', value: student.cards.emcetMockTest },
-                    { label: 'Attendance', value: student.cards.attendence }
-                  ].map((card, index) => (
-                    <div className="card" key={index}>
-                      <h3>{card.label}</h3>
-                      <p className="value">{card.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Fee Information */}
-            {student.feeDetails && (
-              <div className="profile-section fee-info">
-                <h2>Fee Details</h2>
-                <div className="info-grid">
-                  {[
-                    { label: 'Course Fee', value: `₹${student.feeDetails.courseFee}` },
-                    { label: 'Additional Amount', value: `₹${student.feeDetails.addiAmount}` },
-                    { label: 'Concession', value: `₹${student.feeDetails.concession}` },
-                    { label: 'Net Fee', value: `₹${student.feeDetails.netFee}` },
-                    { label: 'Fee Paid', value: `₹${student.feeDetails.feePaid}` },
-                    { 
-                      label: 'Overall Due', 
-                      value: `₹${student.feeDetails.overAlldue}`,
-                      className: student.feeDetails.overAlldue > 0 ? 'due' : '' 
-                    }
-                  ].map((item, index) => (
-                    <div key={index}>
-                      <label>{item.label}</label>
-                      <p className={item.className || ''}>{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Transport Information */}
-            {student.transport && (
-              <div className="profile-section transport-info">
-                <h2>Transport Details</h2>
-                <div className="info-grid">
-                  {[
-                    { label: 'Route No', value: student.transport.routeNo },
-                    { label: 'Route', value: `${student.transport.startFrom} to ${student.transport.toDestination}` },
-                    { label: 'Stage', value: student.transport.stage },
-                    { label: 'Driver Name', value: student.transport.busDriverName },
-                    { label: 'Driver Contact', value: student.transport.driverContactNo },
-                    { label: 'Status', value: student.transport.transportStatus === "1" ? "Active" : "Inactive" }
-                  ].map((item, index) => (
-                    <div key={index}>
-                      <label>{item.label}</label>
-                      <p>{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Payment History */}
-            {student.paymentHistory && student.paymentHistory.length > 0 && (
-              <div className="profile-section payment-history">
-                <h2>Payment History</h2>
-                <div className="table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Class</th>
-                        <th>Academic Year</th>
-                        <th>Payment Head</th>
-                        <th>Amount</th>
-                        <th>Mode</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {student.paymentHistory.map((payment, index) => (
-                        <tr key={index}>
-                          <td>{payment.date}</td>
-                          <td>{payment.className}</td>
-                          <td>{payment.acedemicYear}</td>
-                          <td>{payment.paymentHead}</td>
-                          <td>₹{payment.amount}</td>
-                          <td>{payment.paymentMode}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-        </>
+          ) : (
+            <div className="text-red-500">Selected data type not found in studentData</div>
+          )}
+        </div>
+      )}
+      
+      {!studentId && (
+        <div className="text-gray-500">Please enter a student ID to fetch data.</div>
       )}
     </div>
   );
 };
 
-export default StudentProfile;
+export default StudentSearch;
